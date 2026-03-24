@@ -40,10 +40,16 @@ cp .env.example .env
 
 ## 3. Собрать и запустить через Docker
 
-### Вариант A: Docker Compose (рекомендуется)
+### Вариант A: Docker Compose
 
+**Продакшн:**
 ```bash
-docker compose up --build
+docker compose up --build -d
+```
+
+**Разработка** (с hot-reload и volume mount):
+```bash
+docker compose -f docker-compose.dev.yml up --build
 ```
 
 Сервис поднимается на `http://localhost:8000`.
