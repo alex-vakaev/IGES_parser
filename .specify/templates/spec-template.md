@@ -75,11 +75,26 @@
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
+## Technical Constraints *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Capture the constitution-driven technical limits for this
+  feature. Confirm stack, delivery, and operational boundaries explicitly.
+-->
+
+- **TC-001**: Feature MUST be implemented with Python and FastAPI.
+- **TC-002**: Feature MUST remain backend-only and MUST NOT require a frontend.
+- **TC-003**: Feature MUST define API contract, validation, and error behavior.
+- **TC-004**: Feature MUST describe Docker packaging impact if it changes runtime behavior.
+- **TC-005**: Feature MUST describe deployment documentation impact.
+- **TC-006**: Feature MUST identify where business-logic comments are required.
+
 ## Requirements *(mandatory)*
 
 <!--
   ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right functional requirements.
+  Fill them out with the right functional requirements, including API behavior,
+  validation, error handling, and operational requirements when relevant.
 -->
 
 ### Functional Requirements

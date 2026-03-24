@@ -1,0 +1,280 @@
+{
+  "info": {
+    "name": "IGES File Parser API",
+    "description": "Парсит IGES-файлы инженерных чертежей и возвращает структурированный JSON для LLM-пайплайна.\n\n**Базовый URL**: `{{base_url}}` (по умолчанию `http://localhost:8000`)\n\n**Как использовать:**\n1. Установите переменную окружения `base_url`\n2. Запустите `GET /health` для проверки работоспособности\n3. Отправьте содержимое `.igs`-файла в `POST /parse`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string",
+      "description": "Базовый URL сервиса. Измените для деплоя на сервер."
+    }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "description": "Системные эндпоинты для проверки состояния сервиса.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Проверяет работоспособность сервиса. Используется для liveness/readiness probe.\n\n**Ожидаемый ответ:** `{\"status\": \"ok\"}`"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"status\": \"ok\"\n}",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{base_url}}/health" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Parsing",
+      "description": "Эндпоинты для парсинга IGES-файлов.",
+      "item": [
+        {
+          "name": "Parse IGES — простой чертёж",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"                                                                        S      1\\n1H,,1H;,5Hpart1,16Hsimple_drawing.igs,2Hv1,2Hv1,32,38,6,308,15,6Hpart01,G      1\\n1.,2,2HMM,16,0.10,15H20260324.120000,0.0010,500.,9Htest_user,8Htest_org,G      2\\n11,1,15H20260324.130000,;                                                G      3\\n     110       1       0       0       0       0       0       0       0D      1\\n     110       0       0       0       0       0       0       0       0D      2\\n     212       3       0       0       0       0       0       0       0D      3\\n     212       0       0       0       0       0       0       0       0D      4\\n      1 110,0.,0.,0.,100.,0.,0.;                                        P      1\\n      3 212,1,3.5,1.0,4,0.,0.,0.,0.,0.,0.,6HRa 3.2;                    P      2\\n                                                                        T      1\\n\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/parse",
+              "host": ["{{base_url}}"],
+              "path": ["parse"]
+            },
+            "description": "Парсит минимальный IGES-файл с одной линией и текстовой аннотацией \"Ra 3.2\".\n\nВозвращает:\n- `drawing_metadata` — автор, единицы, стандарт\n- `geometry` — геометрические примитивы с координатами\n- `dimensions` — размерные аннотации\n- `annotations` — текстовые примечания\n- `summary` — bounding box, счётчики сущностей\n- `unsupported_entities` — нераспознанные типы"
+          },
+          "response": [
+            {
+              "name": "200 OK — успешный парсинг",
+              "status": "OK",
+              "code": 200,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"drawing_metadata\": {\n    \"author\": \"test_user\",\n    \"organization\": \"test_org\",\n    \"created_at\": \"20260324.120000\",\n    \"modified_at\": \"20260324.130000\",\n    \"drawing_title\": \"simple_drawing.igs\",\n    \"unit\": \"mm\",\n    \"unit_code\": 2,\n    \"scale\": 1.0,\n    \"iges_version\": \"11\",\n    \"drafting_standard\": \"ISO\"\n  },\n  \"geometry\": [\n    {\n      \"entity_type\": 110,\n      \"entity_name\": \"line\",\n      \"sequence_number\": 1,\n      \"layer\": 0,\n      \"color\": 0,\n      \"line_weight\": 0,\n      \"coordinates\": {\n        \"start\": {\"x\": 0.0, \"y\": 0.0, \"z\": 0.0},\n        \"end\": {\"x\": 100.0, \"y\": 0.0, \"z\": 0.0}\n      },\n      \"raw_parameters\": [\"110\", \"0.\", \"0.\", \"0.\", \"100.\", \"0.\", \"0.\"]\n    }\n  ],\n  \"dimensions\": [],\n  \"annotations\": [\n    {\n      \"entity_type\": 212,\n      \"entity_name\": \"general_note\",\n      \"sequence_number\": 3,\n      \"content\": \"Ra 3.2\",\n      \"position_x\": 0.0,\n      \"position_y\": 0.0,\n      \"char_height\": 3.5,\n      \"raw_parameters\": [\"212\", \"1\", \"3.5\", \"1.0\", \"4\", \"0.\", \"0.\", \"0.\", \"0.\", \"0.\", \"0.\", \"6HRa 3.2\"]\n    }\n  ],\n  \"summary\": {\n    \"bounding_box\": {\"min_x\": 0.0, \"min_y\": 0.0, \"max_x\": 100.0, \"max_y\": 0.0},\n    \"entity_counts\": {\"line\": 1, \"general_note\": 1},\n    \"total_entities\": 2,\n    \"units\": \"mm\"\n  },\n  \"unsupported_entities\": []\n}",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/parse" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Parse IGES — вставить содержимое своего файла",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"ВСТАВЬТЕ СЮДА СОДЕРЖИМОЕ .igs ФАЙЛА КАК СТРОКУ\"\n}",
+              "options": {
+                "raw": { "language": "json" }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/parse",
+              "host": ["{{base_url}}"],
+              "path": ["parse"]
+            },
+            "description": "Шаблон для отправки произвольного IGES-файла.\n\n**Как подготовить тело запроса:**\n\nPowerShell:\n```powershell\n$content = [string](Get-Content drawing.igs -Raw -Encoding UTF8)\n$body = '{\"content\":' + ($content | ConvertTo-Json) + '}'\n```\n\nBash:\n```bash\njq -n --rawfile c drawing.igs '{content: $c}'\n```\n\nPython:\n```python\nimport json\nwith open('drawing.igs', encoding='utf-8') as f:\n    body = json.dumps({'content': f.read()})\n```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Cases",
+      "description": "Примеры запросов, демонстрирующих обработку ошибок.",
+      "item": [
+        {
+          "name": "400 — Пустой content",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/parse",
+              "host": ["{{base_url}}"],
+              "path": ["parse"]
+            },
+            "description": "Демонстрирует ответ `400 EMPTY_INPUT` при пустом поле `content`."
+          },
+          "response": [
+            {
+              "name": "400 EMPTY_INPUT",
+              "status": "Bad Request",
+              "code": 400,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"detail\": {\n    \"error_code\": \"EMPTY_INPUT\",\n    \"message\": \"Поле 'content' не должно быть пустым.\",\n    \"details\": {}\n  }\n}",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/parse" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "422 — Не-IGES текст",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is just a plain text file, not an IGES drawing.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/parse",
+              "host": ["{{base_url}}"],
+              "path": ["parse"]
+            },
+            "description": "Демонстрирует ответ `422 INVALID_FORMAT` при передаче текста без IGES-структуры."
+          },
+          "response": [
+            {
+              "name": "422 INVALID_FORMAT",
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"detail\": {\n    \"error_code\": \"INVALID_FORMAT\",\n    \"message\": \"Не найдена ни одна IGES-секция (S/G/D/P/T). Переданный контент не является валидным IGES-файлом.\",\n    \"details\": {}\n  }\n}",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/parse" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "413 — Превышен размер запроса",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Content-Length", "value": "10485761", "description": "Больше лимита 10 МБ (10485760 байт)" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"x\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/parse",
+              "host": ["{{base_url}}"],
+              "path": ["parse"]
+            },
+            "description": "Демонстрирует ответ `413 SIZE_EXCEEDED` при превышении лимита `MAX_CONTENT_BYTES` (по умолчанию 10 МБ).\n\nЗначение лимита задаётся переменной окружения `MAX_CONTENT_BYTES`."
+          },
+          "response": [
+            {
+              "name": "413 SIZE_EXCEEDED",
+              "status": "Request Entity Too Large",
+              "code": 413,
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"error_code\": \"SIZE_EXCEEDED\",\n  \"message\": \"Размер запроса превышает допустимый лимит 10485760 байт.\",\n  \"details\": {\n    \"max_bytes\": 10485760,\n    \"received_bytes\": 10485761\n  }\n}",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/parse" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "422 — Отсутствует поле content",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"wrong_field\": \"some value\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/parse",
+              "host": ["{{base_url}}"],
+              "path": ["parse"]
+            },
+            "description": "Демонстрирует стандартную Pydantic-ошибку валидации при отсутствии обязательного поля `content`."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "OpenAPI Docs",
+      "description": "Ссылки на автогенерируемую документацию FastAPI.",
+      "item": [
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/docs",
+              "host": ["{{base_url}}"],
+              "path": ["docs"]
+            },
+            "description": "Интерактивная Swagger-документация. Открыть в браузере."
+          },
+          "response": []
+        },
+        {
+          "name": "OpenAPI JSON Schema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/openapi.json",
+              "host": ["{{base_url}}"],
+              "path": ["openapi.json"]
+            },
+            "description": "Полная OpenAPI 3.x схема в формате JSON. Можно импортировать в другие инструменты."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
