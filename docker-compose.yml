@@ -1,12 +1,11 @@
 services:
   iges-parser:
     build: .
-    ports:
-      - "127.0.0.1:8000:8000"  # слушаем только localhost — доступ снаружи через Nginx
+    expose:
+      - "8000"  # порт доступен только внутри Docker-сети, не снаружи
     env_file:
       - .env
     restart: always
-    # healthcheck позволяет Docker автоматически перезапустить контейнер при зависании
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
@@ -16,4 +15,14 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M        # защита от утечки памяти
+          memory: 512M
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"   # HTTP — снаружи доступен порт 80, без указания порта в URL
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - iges-parser
+    restart: always
