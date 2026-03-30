@@ -115,3 +115,41 @@ async def test_kompas_author_is_cyrillic(async_client, kompas_iges_content):
     if author:  # может быть None для файлов без автора
         has_cyrillic = any("\u0400" <= ch <= "\u04ff" for ch in author)
         assert has_cyrillic, f"Автор не кириллический: {author!r}"
+
+
+# ---------------------------------------------------------------------------
+# T0xx: Тесты нормализации (чертёж 534)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def drawing_534_content() -> str:
+    # Реальный IGES от КОМПАС часто в CP1251; декодируем в Unicode перед отправкой в API.
+    return (FIXTURES_DIR / "534.igs").read_text(encoding="cp1251", errors="ignore")
+
+
+async def test_534_general_notes_contain_title_and_material(async_client, drawing_534_content):
+    """После фикса Type 212 general_note содержит реальный текст штампа (Толкатель, Сталь ... ГОСТ ...)."""
+    response = await async_client.post("/parse", json={"content": drawing_534_content})
+    assert response.status_code == 200
+    notes = [a for a in response.json()["annotations"] if a["entity_name"] == "general_note"]
+    all_text = " ".join(n["content"] for n in notes)
+    assert "Толкатель" in all_text
+    assert "Сталь" in all_text and "ГОСТ" in all_text
+
+
+async def test_534_title_block_is_extracted(async_client, drawing_534_content):
+    """Нормализованный title_block извлекается и содержит part_name/material."""
+    response = await async_client.post("/parse", json={"content": drawing_534_content})
+    assert response.status_code == 200
+    tb = response.json().get("title_block")
+    assert tb is not None
+    assert tb.get("part_name")
+    assert tb.get("material")
+
+
+async def test_534_surface_finish_has_ra(async_client, drawing_534_content):
+    """Нормализованный слой surface_finish содержит Ra из текста."""
+    response = await async_client.post("/parse", json={"content": drawing_534_content})
+    assert response.status_code == 200
+    sf = response.json().get("surface_finish", [])
+    assert any((item.get("parameter") == "RA") for item in sf)

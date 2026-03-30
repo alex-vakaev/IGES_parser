@@ -8,6 +8,7 @@ from src.parser.entity_dispatcher import EntityDispatcher
 from src.parser.global_parser import GlobalParser
 from src.parser.directory_parser import DirectoryParser
 from src.parser.iges_reader import IgesReader, IgesFormatError
+from src.parser.normalizer import build_normalized_layer
 
 logger = get_logger(__name__)
 
@@ -98,6 +99,7 @@ async def parse_iges(body: ParseRequest, request: Request) -> ParseResponse:
 
     return ParseResponse(
         drawing_metadata=metadata,
+        **build_normalized_layer(metadata, dimensions, annotations),
         geometry=geometry,
         dimensions=dimensions,
         annotations=annotations,

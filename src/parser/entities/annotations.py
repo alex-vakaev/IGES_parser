@@ -48,19 +48,40 @@ def parse_type_212(params: list[str]) -> dict:
     Один General Note может содержать несколько текстовых блоков (STRING).
     Параметры: NS (число строк), W1, H1, FC1, SLC1, ANG1, XS1, YS1, ZS1, STR1, ...
     """
-    ns = _i(params, 1)  # число текстовых строк в этом Note
+    ns = _i(params, 1)  # число текстовых блоков (STRING) в этом Note
     texts: list[str] = []
     positions: list[dict] = []
     char_heights: list[float] = []
 
-    # Каждая строка занимает 9 параметров + 1 строка текста
-    # Смещение: W, H, FC, SLC, ANG, XS, YS, ZS, MIRROR, ROT + STR
+    # IGES 212 на практике встречается в нескольких раскладках параметров.
+    #
+    # 1) "Классический" (часто в минимальных фикстурах):
+    #    212, NS, W, H, FC, SLC, ANG, XS, YS, ZS, MIRROR, ROT, STR, ...
+    #    -> 9-11 числовых параметров + 1 Hollerith-строка на один STRING.
+    #
+    # 2) Экспорт C3D Converter / KOMPAS (видно на реальных файлах):
+    #    212, NS, W, H, FC, SLC, ANG, XS, YS, ZS, X, Y, Z, STR, ...
+    #    -> 11 числовых параметров + 1 Hollerith-строка на один STRING.
+    #
+    # Мы авто-детектим шаг по общему числу параметров.
+    # step=12: 11 числовых + STR
+    # step=10:  9 числовых + STR (legacy-файлы)
+    step = 12 if len(params) >= 2 + ns * 12 else 10
     for k in range(ns):
-        base = 2 + k * 10
-        char_height = _f(params, base + 1)  # высота символов
-        x = _f(params, base + 5)
-        y = _f(params, base + 6)
-        text_idx = base + 9
+        base = 2 + k * step
+        char_height = _f(params, base + 1)
+
+        if step == 12:
+            # KOMPAS/C3D: ... XS,YS,ZS,X,Y,Z,STR
+            x = _f(params, base + 8)
+            y = _f(params, base + 9)
+            text_idx = base + 11
+        else:
+            # Legacy: ... XS,YS,ZS,MIRROR,ROT,STR
+            x = _f(params, base + 5)
+            y = _f(params, base + 6)
+            text_idx = base + 9
+
         raw_text = params[text_idx].strip() if text_idx < len(params) else ""
         texts.append(_decode_hollerith(raw_text))
         positions.append({"x": x, "y": y})

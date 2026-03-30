@@ -201,15 +201,30 @@ class EntityDispatcher:
             if p_code_pos is None:
                 continue
 
-            # DE-указатель — 8 символов непосредственно перед кодом 'P'
-            seq_str = line[p_code_pos - 8 : p_code_pos].strip()
-            # Данные — всё до DE-указателя (полезная нагрузка параметров)
-            data_part = line[0 : p_code_pos - 8].rstrip()
+            # В IGES 5.3 DE-указатель хранится в колонках 65-72 (8 символов перед 'P'),
+            # но некоторые экспортёры (и наши минимальные фикстуры) пишут DE-указатель
+            # в начале строки (первые 8 символов), а хвост 65-72 оставляют пустым.
+            seq_num: int | None = None
+            data_part: str = ""
 
-            try:
-                seq_num = int(seq_str)
-            except ValueError:
-                continue
+            # Вариант A: стандартный хвостовой DE pointer (перед 'P')
+            tail_seq_str = line[p_code_pos - 8 : p_code_pos].strip()
+            if tail_seq_str:
+                try:
+                    seq_num = int(tail_seq_str)
+                    data_part = line[0 : p_code_pos - 8].rstrip()
+                except ValueError:
+                    seq_num = None
+
+            # Вариант B: DE pointer в начале строки (как в tests/fixtures/*.igs)
+            if seq_num is None:
+                head_seq_str = line[0:8].strip()
+                try:
+                    seq_num = int(head_seq_str)
+                except ValueError:
+                    continue
+                # Полезные данные: между head pointer и хвостом секции
+                data_part = line[8:p_code_pos].rstrip()
 
             if seq_num != current_seq:
                 # Сохраняем предыдущую сущность

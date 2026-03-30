@@ -158,6 +158,27 @@ class ParseResponse(BaseModel):
     """Полный структурированный ответ на запрос парсинга IGES-файла."""
 
     drawing_metadata: DrawingMetadata
+    # -----------------------------------------------------------------------
+    # Нормализованный слой (Priority 1+2): для формирования паспорта детали.
+    # Исходные поля geometry/dimensions/annotations остаются для трассировки.
+    # -----------------------------------------------------------------------
+    title_block: dict | None = None
+    sheet_regions: dict | None = None
+    views: list[dict] = []
+    features: list[dict] = []
+    dimension_objects: list[dict] = []
+    annotations_normalized: list[dict] = []
+    tables: list[dict] = []
+    surface_finish: list[dict] = []
+    general_tolerances: dict | None = None
+    technical_requirements: list[dict] = []
+    datums: list[dict] = []
+    gdt: list[dict] = []
+    hole_patterns: list[dict] = []
+    links: dict | None = None
+    resolved_parameters: dict | None = None
+    extraction_diagnostics: dict | None = None
+    dedup_groups: list[dict] = []
     geometry: list[GeometricEntity] = []
     dimensions: list[DimensionAnnotation] = []
     annotations: list[TextAnnotation] = []
