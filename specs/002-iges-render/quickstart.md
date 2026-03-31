@@ -12,16 +12,6 @@
 docker compose up --build -d
 ```
 
-Production base URL: `http://localhost`
-
-Для локальной разработки (hot-reload) используйте:
-
-```bash
-docker compose -f docker-compose.dev.yml up --build
-```
-
-Development base URL: `http://localhost:8000`
-
 Проверка:
 
 ```bash
@@ -54,8 +44,6 @@ curl -X POST http://localhost/render \
   -d @render-request.json \
   -o drawing.png -D headers.txt
 ```
-
-Для dev-режима замените `http://localhost` на `http://localhost:8000` во всех примерах.
 
 `render-request.json`:
 

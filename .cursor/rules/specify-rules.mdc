@@ -5,11 +5,9 @@ alwaysApply: true
 ---
 # IGES_parser Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-31
+Auto-generated from all feature plans. Last updated: 2026-03-24
 
 ## Active Technologies
-- Python 3.11 + FastAPI, Pydantic v2, Uvicorn, structlog, pytest; pythonocc-core + cairosvg (002-iges-render)
-- N/A (стейт не хранится) (002-iges-render)
 
 - Python 3.11 + FastAPI 0.110+, Pydantic v2, Uvicorn, structlog (001-iges-parser-api)
 
@@ -29,7 +27,6 @@ cd src; pytest; ruff check .
 Python 3.11: Follow standard conventions
 
 ## Recent Changes
-- 002-iges-render: Added Python 3.11 + FastAPI, Pydantic v2, Uvicorn, structlog, pytest; pythonocc-core + cairosvg
 
 - 001-iges-parser-api: Added Python 3.11 + FastAPI 0.110+, Pydantic v2, Uvicorn, structlog
 
