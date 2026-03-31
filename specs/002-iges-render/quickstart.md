@@ -12,6 +12,11 @@
 docker compose up --build -d
 ```
 
+Базовый URL зависит от режима запуска:
+
+- Production (`docker-compose.yml` + Nginx): `http://localhost`
+- Development (`docker-compose.dev.yml`, прямой Uvicorn): `http://localhost:8000`
+
 Проверка:
 
 ```bash
