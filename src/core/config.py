@@ -20,6 +20,15 @@ class Settings(BaseSettings):
     # json — для production/Docker, pretty — для локальной разработки
     log_format: str = "json"
 
+    # Ограничения и дефолты рендера IGES → image.
+    render_default_width_px: int = 1600
+    render_default_height_px: int = 1600
+    render_default_dpi: int = 150
+    render_min_side_px: int = 64
+    render_max_side_px: int = 8192
+    render_min_dpi: int = 72
+    render_max_dpi: int = 600
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 

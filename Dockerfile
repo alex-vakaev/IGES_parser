@@ -9,6 +9,15 @@ FROM python:3.11-slim AS runtime
 
 WORKDIR /app
 
+# Минимальные системные библиотеки для рендера (Cairo/Pillow).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libcairo2 \
+        libjpeg62-turbo \
+        libfreetype6 \
+        libpng16-16 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Копируем установленные пакеты из builder-слоя
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin

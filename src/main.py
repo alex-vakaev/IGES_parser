@@ -69,6 +69,26 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             },
         )
 
+    # Для /render возвращаем бизнес-код INVALID_RENDER_OPTIONS вместо "сырого" 422.
+    if request.url.path == "/render":
+        safe_errors = []
+        for err in errors:
+            err_copy = dict(err)
+            ctx = dict(err_copy.get("ctx", {}))
+            if "error" in ctx:
+                ctx["error"] = str(ctx["error"])
+            if ctx:
+                err_copy["ctx"] = ctx
+            safe_errors.append(err_copy)
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error_code": "INVALID_RENDER_OPTIONS",
+                "message": "Некорректные параметры рендера.",
+                "details": {"errors": safe_errors},
+            },
+        )
+
     # Стандартные ошибки валидации (отсутствует поле, неверный тип и т.п.)
     return JSONResponse(status_code=422, content={"detail": errors})
 

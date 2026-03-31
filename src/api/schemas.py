@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, field_validator
+
+from src.core.config import settings
 
 
 # ---------------------------------------------------------------------------
@@ -16,6 +20,38 @@ class ParseRequest(BaseModel):
     """
 
     content: str
+
+
+class RenderRequest(BaseModel):
+    """Тело POST /render."""
+
+    content: str
+    format: Literal["png", "jpg", "svg"]
+    width_px: int = settings.render_default_width_px
+    height_px: int = settings.render_default_height_px
+    dpi: int = settings.render_default_dpi
+    svg_mode: Literal["vector", "raster_embedded"] = "vector"
+
+    @field_validator("width_px")
+    @classmethod
+    def validate_width(cls, value: int) -> int:
+        if not (settings.render_min_side_px <= value <= settings.render_max_side_px):
+            raise ValueError(f"width_px must be in range {settings.render_min_side_px}..{settings.render_max_side_px}")
+        return value
+
+    @field_validator("height_px")
+    @classmethod
+    def validate_height(cls, value: int) -> int:
+        if not (settings.render_min_side_px <= value <= settings.render_max_side_px):
+            raise ValueError(f"height_px must be in range {settings.render_min_side_px}..{settings.render_max_side_px}")
+        return value
+
+    @field_validator("dpi")
+    @classmethod
+    def validate_dpi(cls, value: int) -> int:
+        if not (settings.render_min_dpi <= value <= settings.render_max_dpi):
+            raise ValueError(f"dpi must be in range {settings.render_min_dpi}..{settings.render_max_dpi}")
+        return value
 
 
 # ---------------------------------------------------------------------------

@@ -43,6 +43,29 @@ response = httpx.post("http://localhost:8000/parse", json={"content": content})
 print(response.json())
 ```
 
+### Рендер в PNG/JPG/SVG
+
+```python
+import httpx
+
+with open("drawing.igs", encoding="utf-8") as f:
+    content = f.read()
+
+response = httpx.post(
+    "http://localhost/render",
+    json={
+        "content": content,
+        "format": "png",
+        "width_px": 1600,
+        "height_px": 1600,
+        "dpi": 150,
+    },
+    timeout=60.0,
+)
+print(response.status_code, response.headers.get("content-type"))
+open("drawing.png", "wb").write(response.content)
+```
+
 ### Проверка работоспособности
 
 ```bash
