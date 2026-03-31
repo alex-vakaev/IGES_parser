@@ -20,7 +20,12 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Сервис доступен на `http://localhost:8000`.
+Сервис в production-конфигурации доступен на `http://localhost` (через Nginx).
+
+## Базовый URL по окружению
+
+- **Production (`docker-compose.yml`)**: `http://localhost`
+- **Development (`docker-compose.dev.yml`)**: `http://localhost:8000`
 
 ## Использование
 
@@ -28,7 +33,7 @@ docker compose up --build
 
 ```powershell
 $body = @{ content = (Get-Content "drawing.igs" -Raw) } | ConvertTo-Json -Depth 1
-Invoke-RestMethod -Uri "http://localhost:8000/parse" -Method POST -ContentType "application/json" -Body $body
+Invoke-RestMethod -Uri "http://localhost/parse" -Method POST -ContentType "application/json" -Body $body
 ```
 
 ### Python
@@ -39,7 +44,7 @@ import httpx
 with open("drawing.igs", encoding="utf-8") as f:
     content = f.read()
 
-response = httpx.post("http://localhost:8000/parse", json={"content": content})
+response = httpx.post("http://localhost/parse", json={"content": content})
 print(response.json())
 ```
 
@@ -69,7 +74,7 @@ open("drawing.png", "wb").write(response.content)
 ### Проверка работоспособности
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost/health
 # {"status": "ok"}
 ```
 
@@ -95,8 +100,8 @@ curl http://localhost:8000/health
 
 ## Документация
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+- Swagger UI: `http://localhost/docs`
+- ReDoc: `http://localhost/redoc`
 - Подробный quickstart: [`specs/001-iges-parser-api/quickstart.md`](specs/001-iges-parser-api/quickstart.md)
 
 ## Переменные окружения

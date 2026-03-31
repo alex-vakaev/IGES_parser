@@ -52,7 +52,11 @@ docker compose up --build -d
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-Сервис поднимается на `http://localhost:8000`.
+Сервис поднимается в production-конфигурации на `http://localhost` (через Nginx).
+
+Базовый URL по окружению:
+- **Production (`docker-compose.yml`)**: `http://localhost`
+- **Development (`docker-compose.dev.yml`)**: `http://localhost:8000`
 
 ### Вариант B: чистый Docker
 
@@ -73,7 +77,7 @@ docker run -d \
 ## 4. Проверка работоспособности
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost/health
 ```
 
 Ожидаемый ответ:
@@ -91,7 +95,7 @@ curl http://localhost:8000/health
 # Читаем файл в переменную и отправляем как JSON
 IGES_CONTENT=$(cat path/to/drawing.igs)
 
-curl -X POST http://localhost:8000/parse \
+curl -X POST http://localhost/parse \
   -H "Content-Type: application/json" \
   -d "{\"content\": $(echo $IGES_CONTENT | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}"
 ```
@@ -103,7 +107,7 @@ $igesContent = Get-Content "path\to\drawing.igs" -Raw
 
 $body = @{ content = $igesContent } | ConvertTo-Json -Depth 1
 
-Invoke-RestMethod -Uri "http://localhost:8000/parse" `
+Invoke-RestMethod -Uri "http://localhost/parse" `
   -Method POST `
   -ContentType "application/json" `
   -Body $body
@@ -118,7 +122,7 @@ with open("drawing.igs", encoding="utf-8") as f:
     content = f.read()
 
 response = httpx.post(
-    "http://localhost:8000/parse",
+    "http://localhost/parse",
     json={"content": content},
     timeout=30.0
 )
@@ -184,9 +188,9 @@ docker stop iges-parser && docker rm iges-parser
 
 После запуска доступна интерактивная документация:
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-- OpenAPI JSON: `http://localhost:8000/openapi.json`
+- Swagger UI: `http://localhost/docs`
+- ReDoc: `http://localhost/redoc`
+- OpenAPI JSON: `http://localhost/openapi.json`
 
 ---
 
@@ -213,4 +217,4 @@ python -m pytest tests/contract/ -v
 | HTTP 422 `INVALID_FORMAT` | Файл не является IGES или имеет бинарный формат | Убедиться, что файл экспортирован как текстовый IGES |
 | HTTP 422 `PARSE_ERROR` | Повреждённые данные в P-секции | Проверить файл в Компас 3D, пересохранить IGES |
 | Кириллица отображается кракозябрами | Клиент не перекодировал файл в UTF-8 | Перед отправкой перекодировать: `iconv -f cp1251 -t utf-8 drawing.igs > drawing_utf8.igs` |
-| `Connection refused` на порту 8000 | Контейнер не запущен | Проверить `docker ps`, перезапустить |
+| `Connection refused` / `Bad Gateway` | Контейнер или Nginx не запущены | Проверить `docker compose ps`, затем `docker compose logs -f` |
