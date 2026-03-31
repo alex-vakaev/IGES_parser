@@ -1,14 +1,15 @@
 import time
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 
-from src.api.schemas import ErrorResponse, ParseRequest, ParseResponse
+from src.api.schemas import ErrorResponse, ParseRequest, ParseResponse, RenderRequest
 from src.core.logging import get_logger
 from src.parser.entity_dispatcher import EntityDispatcher
 from src.parser.global_parser import GlobalParser
 from src.parser.directory_parser import DirectoryParser
 from src.parser.iges_reader import IgesReader, IgesFormatError
 from src.parser.normalizer import build_normalized_layer
+from src.render.renderer import render_iges_image
 
 logger = get_logger(__name__)
 
@@ -106,3 +107,75 @@ async def parse_iges(body: ParseRequest, request: Request) -> ParseResponse:
         summary=summary,
         unsupported_entities=unsupported,
     )
+
+
+@router.post(
+    "/render",
+    responses={
+        200: {"content": {"image/png": {}, "image/jpeg": {}, "image/svg+xml": {}}},
+        400: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+    },
+    tags=["render"],
+)
+async def render_iges(body: RenderRequest, request: Request) -> Response:
+    """Рендерит IGES в PNG/JPG/SVG.
+
+    Возвращает бинарное тело изображения и служебные X-Render-* заголовки.
+    """
+    content = body.content
+    if not content or not content.strip():
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "EMPTY_INPUT", "message": "Поле 'content' не должно быть пустым.", "details": {}},
+        )
+
+    start = time.perf_counter()
+    try:
+        sections = IgesReader().split_sections(content)
+        metadata = GlobalParser().parse(sections.global_lines)
+        directory = DirectoryParser().parse(sections.directory_lines)
+        geometry, dimensions, annotations, _unsupported = EntityDispatcher().dispatch(sections.parameter_lines, directory)
+
+        image_bytes, mime, headers = render_iges_image(
+            geometry=geometry,
+            annotations=annotations,
+            output_format=body.format,
+            width_px=body.width_px,
+            height_px=body.height_px,
+            dpi=body.dpi,
+            svg_mode=body.svg_mode,
+        )
+    except IgesFormatError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={"error_code": "INVALID_FORMAT", "message": str(exc), "details": {}},
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={"error_code": "INVALID_RENDER_OPTIONS", "message": str(exc), "details": {}},
+        )
+    except Exception as exc:
+        logger.error("render_error", error=str(exc))
+        raise HTTPException(
+            status_code=422,
+            detail={"error_code": "RENDER_ERROR", "message": f"Ошибка рендера: {exc}", "details": {}},
+        )
+
+    elapsed_ms = round((time.perf_counter() - start) * 1000)
+    response_headers = {
+        "Content-Disposition": f'inline; filename="drawing.{body.format}"',
+        "X-Render-Format": body.format,
+        "X-Render-Size-Bytes": str(len(image_bytes)),
+        **headers,
+    }
+    logger.info(
+        "render_completed",
+        format=body.format,
+        output_bytes=len(image_bytes),
+        processing_time_ms=elapsed_ms,
+        warning_code=headers.get("X-Render-Warning"),
+    )
+    return Response(content=image_bytes, media_type=mime, headers=response_headers)

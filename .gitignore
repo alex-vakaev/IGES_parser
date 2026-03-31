@@ -21,4 +21,5 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+.cursor/
 чертежи/

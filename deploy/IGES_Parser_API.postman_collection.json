@@ -116,6 +116,34 @@
       ]
     },
     {
+      "name": "Rendering",
+      "description": "Эндпоинт рендера IGES в PNG/JPG/SVG.",
+      "item": [
+        {
+          "name": "Render IGES as PNG",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "image/png" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"                                                                        S      1\\n1H,,1H;,5Hpart1,16Hsimple_drawing.igs,2Hv1,2Hv1,32,38,6,308,15,6Hpart01,G      1\\n1.,2,2HMM,16,0.10,15H20260324.120000,0.0010,500.,9Htest_user,8Htest_org,G      2\\n11,1,15H20260324.130000,;                                                G      3\\n     110       1       0       0       0       0       0       0       0D      1\\n     110       0       0       0       0       0       0       0       0D      2\\n      1 110,0.,0.,0.,100.,0.,0.;                                        P      1\\n                                                                        T      1\\n\",\n  \"format\": \"png\",\n  \"width_px\": 1600,\n  \"height_px\": 1600,\n  \"dpi\": 150\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/render",
+              "host": ["{{base_url}}"],
+              "path": ["render"]
+            },
+            "description": "Возвращает бинарное PNG-изображение. Проверяйте заголовки X-Render-Format/X-Render-Size-Bytes."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Error Cases",
       "description": "Примеры запросов, демонстрирующих обработку ошибок.",
       "item": [
